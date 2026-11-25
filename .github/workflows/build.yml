@@ -1,0 +1,38 @@
+name: Compilar INTONARUMORI 3DS
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  host-tests:                       # motor de som, UI e gravador, no PC
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Testes no PC
+        run: make host
+      - name: Abertura (renderiza os 90 quadros)
+        run: make intro
+  build:
+    runs-on: ubuntu-latest
+    container: devkitpro/devkitarm:latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Versoes das ferramentas
+        run: |
+          echo "DEVKITPRO=$DEVKITPRO"
+          arm-none-eabi-gcc --version | head -1
+          ls "$DEVKITPRO/libctru/include/3ds.h" "$DEVKITPRO/tools/bin/3dsxtool"
+      - name: Compilar
+        run: make
+      - name: Montar pacote para o cartao SD
+        run: |
+          test -s intonarumori.3dsx
+          mkdir -p dist/3ds/intonarumori
+          cp intonarumori.3dsx dist/3ds/intonarumori/
+          cp README.md dist/3ds/intonarumori/LEIA-ME.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: INTONARUMORI_0.9_para_cartao_SD
+          path: dist
